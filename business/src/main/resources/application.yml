@@ -1,0 +1,72 @@
+server:
+  port: 8818
+
+spring:
+  application:
+    name: business-service
+  # 数据库配置
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+#    url: jdbc:mysql://101.32.126.44:3306/trade?useUnicode=true&characterEncoding=utf-8&useSSL=false&useAffectedRows=true&autoReconnect=true
+    url: jdbc:mysql://localhost:3306/trade?useUnicode=true&characterEncoding=utf-8&useSSL=false&useAffectedRows=true&autoReconnect=true
+    username: trade
+    password: 12345678
+    hikari:
+      connection-test-query: SELECT 1 FROM DUAL
+      connection-timeout: 600000
+      maximum-pool-size: 500
+      max-lifetime: 1800000
+      minimum-idle: 20
+      validation-timeout: 3000
+      idle-timeout: 60000
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 3000ms
+      jedis:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+
+mybatis-plus:
+  global-config:
+    db-config:
+      insert-strategy: ignored
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+    poolMaximumActiveConnections: 100
+    poolMaximumIdleConnections: 20
+    poolTimeToWait: 10
+
+logging:
+  config: classpath:logback-config.xml
+  level:
+    com.wizard: INFO
+    org.java_websocket: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# 代理地址
+PROXY:
+  #  URL: https://trade1818.top/https/fapi.binance.com
+  URL: https://fapi.binance.com
+BINANCE:
+  API_KEY: bLRZ0KadDOFwzi4wykvUaztZPqEy1vVtqXHSZTiJsXZh8QbXpKAJBhTZxnwRzpA8
+  SECRET_KEY: MlUXOcLE79Bx4ld7YnYS6hSjKzxhgOOzEdT8sS9bHZ1GLYFrITMYbxE8WHt7y3Hg
+
+# WebSocket 配置（可选的自定义配置）
+websocket:
+  # 心跳间隔（秒）
+  heartbeat-interval: 30
+  # 连接超时（秒）
+  connection-timeout: 30
+  # 重连间隔（秒）
+  reconnect-interval: 5
+  # 最大重连次数
+  max-reconnect-attempts: 3
