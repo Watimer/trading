@@ -38,7 +38,8 @@ public class StartComponent {
 	LikeListComponent likeListComponent;
 	List<String> list = Arrays.asList("BTCUSDT", "AAVEUSDT", "SOLUSDT");
 	List<IntervalEnum> intervalList = Arrays.asList(IntervalEnum.FIFTEEN_MINUTE, IntervalEnum.ONE_HOUR,IntervalEnum.FOUR_HOUR,IntervalEnum.ONE_DAY);
-	@PostConstruct
+
+	//@PostConstruct
 	public void initGlobalList(){
 		Long logId = IdWorker.getId();
 		log.info("日志ID:{},启动时执行1",logId);

@@ -2,11 +2,14 @@ package com.wizard.common.utils;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
 import com.alibaba.fastjson.JSONArray;
+import com.wizard.common.enums.IntervalEnum;
 import com.wizard.common.model.MarketQuotation;
+import com.wizard.common.model.dto.SymbolLineDTO;
 
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author wizard
@@ -15,19 +18,19 @@ import java.util.List;
  */
 public class DataTransformationUtil {
 
-	public static List<MarketQuotation> transform(String symbol,String dataString) {
+	public static List<MarketQuotation> transform(SymbolLineDTO symbolLineDTO, String dataString) {
 		JSONArray jsonArray = JSONArray.parseArray(dataString);
 		// 行情数据
-		List<MarketQuotation> listMarketQuotation = new ArrayList<>();
-		jsonArray.stream().forEach(item ->{
-			JSONArray jsonItem = JSONArray.parseArray(item.toString());
-			MarketQuotation marketQuotation = getMarketQuotation(symbol,jsonItem);
-			listMarketQuotation.add(marketQuotation);
-		});
+		List<MarketQuotation> listMarketQuotation = (List<MarketQuotation>) jsonArray.parallelStream()
+				.map(item -> {
+					JSONArray jsonItem = JSONArray.parseArray(item.toString());
+					return getMarketQuotation(symbolLineDTO, jsonItem);
+				}).collect(Collectors.toList());
+
 		return listMarketQuotation;
 	}
 
-	private static MarketQuotation getMarketQuotation(String symbol,JSONArray jsonItem){
+	private static MarketQuotation getMarketQuotation(SymbolLineDTO symbolLineDTO,JSONArray jsonItem){
 		MarketQuotation marketQuotation = new MarketQuotation();
 		Long openTime = jsonItem.getLong(0);
 		Long closeTime = jsonItem.getLong(6);
@@ -59,7 +62,8 @@ public class DataTransformationUtil {
 		marketQuotation.setAmount(amount);
 		marketQuotation.setBigDecimalAmount(jsonItem.getBigDecimal(7));
 
-		marketQuotation.setSymbol(symbol);
+		marketQuotation.setSymbol(symbolLineDTO.getSymbol());
+		marketQuotation.setIntervalEnum(IntervalEnum.fromCode(symbolLineDTO.getInterval()));
 		return marketQuotation;
 	}
 }

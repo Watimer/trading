@@ -36,4 +36,14 @@ public enum IntervalEnum {
 		this.code = code;
 		this.name = name;
 	}
+
+	public static IntervalEnum fromCode(String code) {
+		for (IntervalEnum status : IntervalEnum.values()) {
+			if (code.equals(status.getCode())) {
+				return status;
+			}
+		}
+		// 如果没有找到，抛出异常或者返回 null
+		throw new IllegalArgumentException("Unknown code: " + code);
+	}
 }
