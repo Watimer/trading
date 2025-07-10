@@ -51,6 +51,8 @@ public class MarketQuotation implements IndicatorCalculateCarrier<LocalDateTime>
     private Double amount;
     private BigDecimal bigDecimalAmount;
 
+    private boolean x;
+
     // =======================
     // 上面的属性值，一般情况下，分时和日行情都有
     // 下面的属性值，一般情况下，分时和日行情可能有，即便是没有，也可以通过上面的属性计算得出

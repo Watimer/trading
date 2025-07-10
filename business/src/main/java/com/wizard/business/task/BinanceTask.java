@@ -21,7 +21,7 @@ public class BinanceTask {
     /**
 	 * 从零时起,每四小时零2秒执行一次
 	 */
-	@Scheduled(cron = "2 0 0/4 * * ?")
+	@Scheduled(fixedRate = 1000 * 60 * 5)
 	public void scanFourHourData(){
 		businessService.scanFourHourData();
 	}

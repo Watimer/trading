@@ -15,6 +15,7 @@ import com.wizard.common.component.LikeListComponent;
 import com.wizard.common.enums.IndicatorEnum;
 import com.wizard.common.enums.IntervalEnum;
 import com.wizard.common.model.MarketQuotation;
+import com.wizard.common.utils.DataTransformationUtil;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -42,23 +43,28 @@ public class StartComponent {
 	@Resource
 	BusinessService businessService;
 
-	List<IntervalEnum> intervalList = Arrays.asList(IntervalEnum.FIFTEEN_MINUTE, IntervalEnum.ONE_HOUR,IntervalEnum.FOUR_HOUR,IntervalEnum.ONE_DAY);
+	@Resource
+	RedisUtils redisUtils;
+
+	List<IntervalEnum> intervalList = Arrays.asList(IntervalEnum.FIFTEEN_MINUTE);
 
 	@PostConstruct
 	public void initGlobalList(){
 		Long logId = IdWorker.getId();
+		log.info("initWebSocket");
 		initWebSocket();
 	}
 
 	public void initWebSocket(){
 		WebsocketClientImpl websocketClient = new UMWebsocketClientImpl();
-		List<String> symbolList = likeListComponent.getOptionalSymbol();
+		List<String> symbolList = businessService.getOptionalSymbol();
 		symbolList.stream().forEach(symbol -> {
 			intervalList.stream().forEach(interval -> {
 				websocketClient.klineStream(symbol, interval.getCode(),(event) ->{
-					log.info("接收到K线数据:{}",symbol);
-					MarketQuotation marketQuotation = JSONUtil.toBean(event, MarketQuotation.class);
-					businessService.calculate(marketQuotation, IndicatorEnum.SUPER_TREND);
+					MarketQuotation marketQuotation = DataTransformationUtil.transformMarketQuotation(symbol,interval,event);
+					if(marketQuotation.isX()){
+						businessService.calculate(marketQuotation, IndicatorEnum.SUPER_TREND);
+					}
 				});
 			});
 		});

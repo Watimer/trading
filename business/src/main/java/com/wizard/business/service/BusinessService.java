@@ -8,9 +8,11 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
+import com.wizard.business.component.PushMessage;
 import com.wizard.business.component.RedisUtils;
 import com.wizard.common.constants.RedisConstants;
 import com.wizard.common.enums.IndicatorEnum;
+import com.wizard.common.model.dto.DingDingMessageDTO;
 import com.wizard.common.utils.SuperTrend;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -46,7 +48,13 @@ public class BusinessService {
     UMFuturesClientImpl binanceFuturesClient;
 
     @Resource
+    RedisUtils redisUtils;
+
+    @Resource
     private LikeListComponent likeListComponent;
+
+    @Resource
+    PushMessage pushMessage;
 
     @Resource
     private SuperTrendSignalService superTrendSignalService;
@@ -104,8 +112,7 @@ public class BusinessService {
      */
     private final List<IntervalEnum> intervalList = Arrays.asList(IntervalEnum.FIFTEEN_MINUTE,IntervalEnum.ONE_HOUR,IntervalEnum.FOUR_HOUR,IntervalEnum.ONE_DAY);
 
-    @Resource
-    RedisUtils redisUtils;
+
 
     /**
      * 扫描自选数据及周期,并计算指标,保存指标值
@@ -209,6 +216,7 @@ public class BusinessService {
      * @param indicatorEnum         指标类型
      */
     public void calculate(MarketQuotation marketQuotation, IndicatorEnum indicatorEnum) {
+        log.info("计算指标");
         String symbol = marketQuotation.getSymbol();
         String indicatorName = indicatorEnum.getCode();
         if(IndicatorEnum.SUPER_TREND.equals(indicatorEnum)) {
@@ -222,17 +230,42 @@ public class BusinessService {
                     double tempLow = marketQuotation.getLow() - superTrend.getSupertrendValue();
                     double tempLowRate = Math.abs(tempLow) / superTrend.getSupertrendValue();
                     double tempClose = marketQuotation.getClose() - superTrend.getSupertrendValue();
-                    double tempCloseRate = Math.abs(tempClose) - superTrend.getSupertrendValue();
+                    double tempCloseRate = Math.abs(tempClose) / superTrend.getSupertrendValue();
+                    //log.info("symbol:{},in:{} tempLow:{},tempLowRate:{},tempClose:{},tempCloseRate:{}", symbol,interval,tempLow, tempLowRate, tempClose, tempCloseRate);
                     if((tempLow>=0 && tempLowRate <= 0.02) || (tempClose >= 0 && tempCloseRate <= 0.02)){
-                        // TODO 发送通知
+                        StringBuilder content = new StringBuilder();
+                        content.append(symbol).append("\n")
+                                .append("价格:").append(" ").append(marketQuotation.getBigDecimalClose()).append("\n")
+                                .append("周期:").append(" ").append(interval).append("\n")
+                                .append("指标:").append(" ").append(indicatorName).append("\n")
+                                .append("方向:").append(" ").append("支撑之上").append("\n")
+                                .append("建议:").append(" ").append("回踩至支撑附近,适当做多。").append("\n");
+                        // 发送通知
+                        DingDingMessageDTO dingDingMessageDTO = DingDingMessageDTO.builder()
+                                .msgtype("text")
+                                .context(content.toString())
+                                .build();
+                        pushMessage.pushMessage(dingDingMessageDTO);
                     }
                 }  else {
                     double tempHigh = superTrend.getSupertrendValue() - marketQuotation.getHigh();
                     double tempHighRate = Math.abs(tempHigh) / superTrend.getSupertrendValue();
                     double tempClose = superTrend.getSupertrendValue() - marketQuotation.getClose();
-                    double tempCloseRate = Math.abs(tempClose) - superTrend.getSupertrendValue();
+                    double tempCloseRate = Math.abs(tempClose) / superTrend.getSupertrendValue();
                     if((tempHigh >= 0 && tempHighRate <= 0.02) || (tempClose >= 0 && tempCloseRate <= 0.02)){
-                        // TODO 发送通知
+                        StringBuilder content = new StringBuilder();
+                        content.append(symbol).append("\n")
+                                .append("价格:").append(" ").append(marketQuotation.getBigDecimalClose()).append("\n")
+                                .append("周期:").append(" ").append(interval).append("\n")
+                                .append("指标:").append(" ").append(indicatorName).append("\n")
+                                .append("方向:").append(" ").append("阻力之下").append("\n")
+                                .append("建议:").append(" ").append("反弹至阻力附近,适当做空。").append("\n");
+                        // 发送通知
+                        DingDingMessageDTO dingDingMessageDTO = DingDingMessageDTO.builder()
+                                .msgtype("text")
+                                .context(content.toString())
+                                .build();
+                        pushMessage.pushMessage(dingDingMessageDTO);
                     }
                 }
             });

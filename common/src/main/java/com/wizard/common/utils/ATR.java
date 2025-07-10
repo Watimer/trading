@@ -68,8 +68,6 @@ public class ATR extends Indicator {
 		 */
 		@Override
 		protected ATR executeCalculate() {
-			log.info("进入ATR计算器:{}",getHead());
-			log.info("进入ATR计算器:{}",getDataList());
 			List<Double> highs = new ArrayList<>();
 			List<Double> lows = new ArrayList<>();
 			List<Double> closes = new ArrayList<>();

@@ -1,6 +1,8 @@
 package com.wizard.common.utils;
 
 import cn.hutool.core.date.LocalDateTimeUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.wizard.common.enums.IntervalEnum;
 import com.wizard.common.model.MarketQuotation;
@@ -64,6 +66,26 @@ public class DataTransformationUtil {
 
 		marketQuotation.setSymbol(symbolLineDTO.getSymbol());
 		marketQuotation.setIntervalEnum(IntervalEnum.fromCode(symbolLineDTO.getInterval()));
+		return marketQuotation;
+	}
+
+	public static MarketQuotation transformMarketQuotation(String symbol,IntervalEnum intervalEnum,String event) {
+		JSONObject entries = JSONUtil.parseObj(event);
+		JSONObject k = entries.getJSONObject("k");
+		MarketQuotation marketQuotation = new MarketQuotation();
+		marketQuotation.setSymbol(symbol);
+		marketQuotation.setIntervalEnum(intervalEnum);
+		marketQuotation.setOpen(k.getDouble("o"));
+		marketQuotation.setBigDecimalOpen(k.getBigDecimal("o"));
+		marketQuotation.setHigh(k.getDouble("h"));
+		marketQuotation.setBigDecimalHigh(k.getBigDecimal("h"));
+		marketQuotation.setLow(k.getDouble("l"));
+		marketQuotation.setBigDecimalLow(k.getBigDecimal("l"));
+		marketQuotation.setClose(k.getDouble("c"));
+		marketQuotation.setBigDecimalClose(k.getBigDecimal("c"));
+		marketQuotation.setVolume(k.getDouble("v"));
+		marketQuotation.setBigDecimalVolume(k.getBigDecimal("v"));
+		marketQuotation.setX(k.getBool("x"));
 		return marketQuotation;
 	}
 }
