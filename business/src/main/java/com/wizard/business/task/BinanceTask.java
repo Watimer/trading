@@ -15,15 +15,15 @@ import org.springframework.scheduling.annotation.Scheduled;
 @EnableScheduling
 public class BinanceTask {
 
-	@Resource
-	BusinessService businessService;
+    @Resource
+    BusinessService businessService;
 
-	/**
+    /**
 	 * 从零时起,每四小时零2秒执行一次
 	 */
 	@Scheduled(cron = "2 0 0/4 * * ?")
 	public void scanFourHourData(){
-		//businessService.marketQuotationList()
+		businessService.scanFourHourData();
 	}
 
 }

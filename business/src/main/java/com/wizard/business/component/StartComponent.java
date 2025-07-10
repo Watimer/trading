@@ -9,8 +9,10 @@ import com.binance.connector.futures.client.exceptions.BinanceClientException;
 import com.binance.connector.futures.client.impl.UMWebsocketClientImpl;
 import com.binance.connector.futures.client.impl.WebsocketClientImpl;
 import com.binance.connector.futures.client.utils.WebSocketCallback;
+import com.wizard.business.service.BusinessService;
 import com.wizard.common.component.GlobalListComponent;
 import com.wizard.common.component.LikeListComponent;
+import com.wizard.common.enums.IndicatorEnum;
 import com.wizard.common.enums.IntervalEnum;
 import com.wizard.common.model.MarketQuotation;
 import jakarta.annotation.PostConstruct;
@@ -36,30 +38,27 @@ public class StartComponent {
 
 	@Resource
 	LikeListComponent likeListComponent;
-	List<String> list = Arrays.asList("BTCUSDT", "AAVEUSDT", "SOLUSDT");
+
+	@Resource
+	BusinessService businessService;
+
 	List<IntervalEnum> intervalList = Arrays.asList(IntervalEnum.FIFTEEN_MINUTE, IntervalEnum.ONE_HOUR,IntervalEnum.FOUR_HOUR,IntervalEnum.ONE_DAY);
 
-	//@PostConstruct
+	@PostConstruct
 	public void initGlobalList(){
 		Long logId = IdWorker.getId();
-		log.info("日志ID:{},启动时执行1",logId);
-
-		globalListComponent.addToGlobalList(logId,list);
-		log.info("日志ID:{},数据初始化完成..",logId);
-		list.stream().forEach(symbol -> {
-			likeListComponent.addOptional(logId,symbol,null);
-		});
 		initWebSocket();
 	}
 
 	public void initWebSocket(){
 		WebsocketClientImpl websocketClient = new UMWebsocketClientImpl();
-		list.stream().forEach(symbol -> {
+		List<String> symbolList = likeListComponent.getOptionalSymbol();
+		symbolList.stream().forEach(symbol -> {
 			intervalList.stream().forEach(interval -> {
 				websocketClient.klineStream(symbol, interval.getCode(),(event) ->{
 					log.info("接收到K线数据:{}",symbol);
 					MarketQuotation marketQuotation = JSONUtil.toBean(event, MarketQuotation.class);
-					likeListComponent.addOptionalMarketQuotation(1L,symbol,interval,marketQuotation);
+					businessService.calculate(marketQuotation, IndicatorEnum.SUPER_TREND);
 				});
 			});
 		});

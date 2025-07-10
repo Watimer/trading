@@ -26,6 +26,7 @@ public abstract class WebSocketService implements WebsocketClient {
 		WebsocketClientImpl websocketClient = new UMWebsocketClientImpl();
 		websocketClient.allTickerStream((event) -> {
 			System.out.println("接收到K线数据：" + event);
+
 		});
 		return 0;
 	}

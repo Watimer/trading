@@ -33,6 +33,19 @@ public class LikeListComponent {
 		return instance;
 	}
 
+	public List<String> getOptionalSymbol(){
+		List<String> symbolList = new ArrayList<>();
+		if(ObjectUtil.isNull(optionalMap)){
+			return symbolList;
+		}
+		Iterator<Map.Entry<String, Map<IntervalEnum, List<MarketQuotation>>>> iterator = optionalMap.entrySet().iterator();
+		if(iterator.hasNext()){
+			String symbol = iterator.next().getKey();
+			symbolList.add(symbol);
+		}
+		return symbolList;
+	}
+
 	/**
 	 * 添加待分析数据
 	 * @param logId		日志ID
