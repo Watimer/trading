@@ -145,4 +145,16 @@ public class BusinessController {
             return ResultInfoUtil.buildErrorMsg("获取失败: " + e.getMessage());
         }
     }
+
+
+    @GetMapping("/testPushMessage")
+    public ResultInfo<Boolean> testPushMessage(){
+        ResultInfo<Boolean> resultInfo = null;
+        try {
+            Boolean data = businessService.testPushMessage();
+            return ResultInfoUtil.buildSuccess(request.getRequestURI(), data);
+        } catch (Exception e) {
+            return ResultInfoUtil.buildErrorMsg("获取失败: " + e.getMessage());
+        }
+    }
 }

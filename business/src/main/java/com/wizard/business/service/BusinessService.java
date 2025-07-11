@@ -289,4 +289,13 @@ public class BusinessService {
         }
         redisUtils.set(RedisConstants.BINANCE_SYMBOL,JSONObject.toJSONString(resultList));
     }
+
+    public Boolean testPushMessage() {
+        DingDingMessageDTO dingDingMessageDTO = DingDingMessageDTO.builder()
+                .msgtype("text")
+                .context("这是一条测试消息")
+                .build();
+        pushMessage.pushMessage(dingDingMessageDTO);
+        return true;
+    }
 }

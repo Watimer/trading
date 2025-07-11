@@ -6,6 +6,7 @@ import com.dingtalk.api.request.OapiRobotSendRequest;
 import com.dingtalk.api.response.OapiRobotSendResponse;
 import com.taobao.api.ApiException;
 import com.wizard.common.model.dto.DingDingMessageDTO;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -22,19 +23,14 @@ import java.security.NoSuchAlgorithmException;
  * @date 2025年07月10日 15:41
  * @desc 推送通知组件
  */
+@Slf4j
 @Component
 public class PushMessage {
-
-	@Value("${CUSTOM_ROBOT_TOKEN}")
-	public String CUSTOM_ROBOT_TOKEN;
-
-	@Value("${SECRET}")
-	public String SECRET;
 
 	public void pushMessage(DingDingMessageDTO dingDingMessageDTO) {
 		try {
 			Long timestamp = System.currentTimeMillis();
-			String secret = SECRET;
+			String secret = System.getenv("DINGDING_SECRET");
 			String stringToSign = timestamp + "\n" + secret;
 			Mac mac = Mac.getInstance("HmacSHA256");
 			mac.init(new SecretKeySpec(secret.getBytes("UTF-8"), "HmacSHA256"));
@@ -56,7 +52,7 @@ public class PushMessage {
 				text.setContent(dingDingMessageDTO.getContext());
 				req.setText(text);
 			}
-			OapiRobotSendResponse rsp = client.execute(req, CUSTOM_ROBOT_TOKEN);
+			OapiRobotSendResponse rsp = client.execute(req, System.getenv("DINGDING_CUSTOM_ROBOT_TOKEN"));
 		} catch (ApiException e) {
 			e.printStackTrace();
 		} catch (UnsupportedEncodingException e) {

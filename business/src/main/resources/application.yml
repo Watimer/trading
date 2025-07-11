@@ -51,10 +51,6 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
-# 钉钉机器人配置-token-签名
-CUSTOM_ROBOT_TOKEN: ${DINGDING_CUSTOM_ROBOT_TOKEN}
-SECRET: ${DINGDING_SECRET}
-
 # WebSocket 配置（可选的自定义配置）
 websocket:
   # 心跳间隔（秒）
