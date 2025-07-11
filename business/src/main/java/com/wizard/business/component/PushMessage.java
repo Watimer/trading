@@ -32,7 +32,6 @@ public class PushMessage {
 	public void pushMessage(DingDingMessageDTO dingDingMessageDTO) {
 		try {
 			Long timestamp = System.currentTimeMillis();
-			System.out.println(timestamp);
 			String secret = SECRET;
 			String stringToSign = timestamp + "\n" + secret;
 			Mac mac = Mac.getInstance("HmacSHA256");

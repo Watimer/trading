@@ -35,26 +35,19 @@ import java.util.List;
 public class StartComponent {
 
 	@Resource
-	GlobalListComponent globalListComponent;
-
-	@Resource
-	LikeListComponent likeListComponent;
-
-	@Resource
 	BusinessService businessService;
-
-	@Resource
-	RedisUtils redisUtils;
 
 	List<IntervalEnum> intervalList = Arrays.asList(IntervalEnum.FIFTEEN_MINUTE);
 
 	@PostConstruct
 	public void initGlobalList(){
-		Long logId = IdWorker.getId();
 		log.info("initWebSocket");
 		initWebSocket();
 	}
 
+	/**
+	 * 订阅自选标的websocket数据,基于15min级别，发送信号消息
+	 */
 	public void initWebSocket(){
 		WebsocketClientImpl websocketClient = new UMWebsocketClientImpl();
 		List<String> symbolList = businessService.getOptionalSymbol();
@@ -62,7 +55,9 @@ public class StartComponent {
 			intervalList.stream().forEach(interval -> {
 				websocketClient.klineStream(symbol, interval.getCode(),(event) ->{
 					MarketQuotation marketQuotation = DataTransformationUtil.transformMarketQuotation(symbol,interval,event);
+					// 只在收盘时,执行指标计算
 					if(marketQuotation.isX()){
+						// 指标计算器
 						businessService.calculate(marketQuotation, IndicatorEnum.SUPER_TREND);
 					}
 				});

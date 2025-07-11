@@ -1,7 +1,9 @@
 package com.wizard.business.task;
 
 import com.wizard.business.service.BusinessService;
+import com.wizard.business.service.TradingViewService;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -11,12 +13,16 @@ import org.springframework.scheduling.annotation.Scheduled;
  * @date 2025年07月09日 18:10
  * @desc
  */
+@Slf4j
 @Configuration
 @EnableScheduling
 public class BinanceTask {
 
     @Resource
     BusinessService businessService;
+
+	@Resource
+	TradingViewService tradingViewService;
 
     /**
 	 * 从零时起,每四小时零2秒执行一次
@@ -26,4 +32,13 @@ public class BinanceTask {
 		businessService.scanFourHourData();
 	}
 
+	/**
+	 * 调用tv筛选器
+	 */
+	@Scheduled(cron = "2 0 0/1 * * ?")
+	public void scanTradingView(){
+		log.info("开始执行TV检测");
+		tradingViewService.scan();
+		log.info("完成执行TV检测");
+	}
 }
