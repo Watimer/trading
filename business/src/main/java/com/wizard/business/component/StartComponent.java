@@ -10,6 +10,7 @@ import com.binance.connector.futures.client.impl.UMWebsocketClientImpl;
 import com.binance.connector.futures.client.impl.WebsocketClientImpl;
 import com.binance.connector.futures.client.utils.WebSocketCallback;
 import com.wizard.business.service.BusinessService;
+import com.wizard.business.service.NewsService;
 import com.wizard.common.component.GlobalListComponent;
 import com.wizard.common.component.LikeListComponent;
 import com.wizard.common.enums.IndicatorEnum;
@@ -37,12 +38,17 @@ public class StartComponent {
 	@Resource
 	BusinessService businessService;
 
+	@Resource
+	NewsService newsService;
+
 	List<IntervalEnum> intervalList = Arrays.asList(IntervalEnum.FIFTEEN_MINUTE);
 
-	@PostConstruct
+	//@PostConstruct
 	public void initGlobalList(){
-		log.info("initWebSocket");
+		// 初始化行情数据
 		initWebSocket();
+		// 初始化新闻流
+		initPaNewsLab();
 	}
 
 	/**
@@ -64,5 +70,9 @@ public class StartComponent {
 			});
 		});
 
+	}
+
+	public void initPaNewsLab(){
+		newsService.pullNews();
 	}
 }
