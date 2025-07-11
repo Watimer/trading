@@ -8,4 +8,6 @@ package com.wizard.common.constants;
 public class RedisConstants {
 
 	public static final String OPTIONAL_SYMBOL = "OPTIONAL_SYMBOL";
+
+	public static final String BINANCE_SYMBOL = "BINANCE:SYMBOLS";
 }

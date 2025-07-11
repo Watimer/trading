@@ -27,15 +27,23 @@ public class BinanceTask {
     /**
 	 * 从零时起,每四小时零2秒执行一次
 	 */
-	//@Scheduled(fixedRate = 1000 * 60 * 5)
+	@Scheduled(fixedRate = 1000 * 60 * 5)
 	public void scanFourHourData(){
 		businessService.scanFourHourData();
 	}
 
 	/**
+	 * 扫描所有的可交易标的
+	 */
+	@Scheduled(fixedRate = 1000 * 60 * 15)
+	public void scanAllSymbol(){
+		businessService.scanAllSymbol();
+	}
+
+	/**
 	 * 调用tv筛选器
 	 */
-	//@Scheduled(cron = "2 0 0/1 * * ?")
+	@Scheduled(cron = "2 0 0/1 * * ?")
 	public void scanTradingView(){
 		log.info("开始执行TV检测");
 		tradingViewService.scan();

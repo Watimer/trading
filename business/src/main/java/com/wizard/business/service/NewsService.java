@@ -1,7 +1,9 @@
 package com.wizard.business.service;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import com.alibaba.fastjson.JSONArray;
@@ -12,20 +14,26 @@ import com.binance.connector.futures.client.impl.futures.Market;
 import com.binance.connector.futures.client.impl.um_futures.UMMarket;
 import com.wizard.business.component.RedisUtils;
 import com.wizard.common.component.GlobalListComponent;
+import com.wizard.common.constants.RedisConstants;
 import com.wizard.common.utils.TokenNewsAnalyzerUtil;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wizard
  * @date 2025年07月11日 15:52
  * @desc
  */
+@Slf4j
 @Service
 public class NewsService {
 
@@ -33,8 +41,7 @@ public class NewsService {
 	RedisUtils redisUtils;
 
 	@Resource
-	@Qualifier("binanceUMMarket")
-	UMMarket binanceUMMarket;
+	UMMarketService umMarketService;
 
 	@Resource
 	AccountOrderBinance accountOrderBinance;
@@ -43,58 +50,72 @@ public class NewsService {
 	 * 监控新闻列表
 	 */
 	public void pullNews() {
+		while (true) {
+			// 随机生成睡眠时间
+			int sleepSecond = RandomUtil.randomInt(1,7);
+			ThreadUtil.sleep(sleepSecond, TimeUnit.SECONDS);
+			List<String> symbolList = new ArrayList<>();
 
-		List<String> symbolList = new ArrayList<>();
+			// 新闻地址
+			String newsAddress = "https://api.panewslab.com/webapi/flashnews?rn=20&lid=1&apppush=0";
+			// 调用新闻接口
+			String body = HttpRequest.get(newsAddress).execute().body();
+			if(StrUtil.isBlank(body)){
+				//TODO 发送系统通知
+				continue;
+			}
+			JSONObject jsonObject = null;
+			try {
+				jsonObject = JSONObject.parseObject(body);
+			} catch (Exception e) {
+				// TODO JSON解析失败,发送通知
+				log.info("格式化失败:{}", e.getMessage());
+				continue;
+			}
+			if(ObjectUtil.isNotNull(jsonObject) && 0 == jsonObject.getInteger("errno")){
+				// 提取data
+				JSONObject data = jsonObject.getJSONObject("data");
+				// 提取最新新闻
+				JSONArray newsArray = data.getJSONArray("news");
+				if(ObjectUtil.isNotEmpty(newsArray)){
+					JSONObject jsonObject1 = newsArray.getJSONObject(0);
+					if(ObjectUtil.isNotNull(jsonObject1)){
+						JSONArray jsonArray = jsonObject1.getJSONArray("list");
+						JSONObject jsonObject2 = jsonArray.getJSONObject(0);
+						// 新闻标题
+						String string = jsonObject2.getString("title");
 
-		// 新闻地址
-		String newsAddress = "https://api.panewslab.com/webapi/flashnews?rn=20&lid=1&apppush=0";
-		// 调用新闻接口
-		String body = HttpRequest.get(newsAddress).execute().body();
-		if(StrUtil.isBlank(body)){
-			//TODO 发送系统通知
-			return;
-		}
-		JSONObject jsonObject = null;
-		try {
-			jsonObject = JSONObject.parseObject(body);
-		} catch (Exception e) {
-			// TODO JSON解析失败,发送通知
-		}
-		if(ObjectUtil.isNotNull(jsonObject) && 0 == jsonObject.getInteger("errno")){
-			// 提取data
-			JSONObject data = jsonObject.getJSONObject("data");
-			// 提取最新新闻
-			JSONArray newsArray = data.getJSONArray("news");
-			if(ObjectUtil.isNotEmpty(newsArray)){
-				JSONObject jsonObject1 = newsArray.getJSONObject(0);
-				if(ObjectUtil.isNotNull(jsonObject1)){
-					JSONArray jsonArray = jsonObject1.getJSONArray("list");
-					JSONObject jsonObject2 = jsonArray.getJSONObject(0);
-					// 新闻标题
-					String string = jsonObject2.getString("title");
+						symbolList = TokenNewsAnalyzerUtil.extractTokenNames(string);
+					}
+				}
+			}
 
-					symbolList = TokenNewsAnalyzerUtil.extractTokenNames(string);
+			if(CollUtil.isNotEmpty(symbolList)){
+				String symbol = symbolList.get(0) + "USDT";
+				// 此处应添加判断是否在币安的逻辑
+				String binanceSymbolList = redisUtils.get(RedisConstants.BINANCE_SYMBOL);
+				if(StrUtil.isNotBlank(binanceSymbolList) && binanceSymbolList.contains(symbol)){
+
+					// 最低数量为5U
+					BigDecimal minMoney = new BigDecimal("5.0");
+					// 当前价格
+					BigDecimal price = umMarketService.getMarketPrice(symbol);
+
+					// 计算最低买入数量
+					BigDecimal bigDecimalCount = minMoney.divide(price, RoundingMode.HALF_DOWN);
+					// 最低买入数量 * 2
+					bigDecimalCount = bigDecimalCount.multiply(new BigDecimal(symbol));
+
+					LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
+					parameters.put("symbols", symbolList.get(0));
+					parameters.put("side", "BUY");
+					parameters.put("type", "MARKET");
+					parameters.put("positionSide", "LONG");
+					parameters.put("quantity", bigDecimalCount.intValue());
+					accountOrderBinance.newOrder(parameters);
 				}
 			}
 		}
 
-		if(CollUtil.isNotEmpty(symbolList)){
-			String symbol = symbolList.get(0) + "USDT";
-			// 此处应添加判断是否在币安的逻辑
-			String binanceSymbolList = redisUtils.get("BINANCE:SYMBOLS");
-			if(StrUtil.isNotBlank(binanceSymbolList) && binanceSymbolList.contains(symbol)){
-
-				LinkedHashMap<String, Object> parametersPrice = new LinkedHashMap<>();
-				parametersPrice.put("symbol", symbol);
-				// 查看当前价格
-				String string = binanceUMMarket.markPrice(parametersPrice);
-				LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
-				parameters.put("symbols", symbolList.get(0));
-				parameters.put("side", "BUY");
-				parameters.put("type", "MARKET");
-				parameters.put("quantity", 1);
-				accountOrderBinance.newOrder(parameters);
-			}
-		}
 	}
 }

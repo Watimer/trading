@@ -43,12 +43,15 @@ public class StartComponent {
 
 	List<IntervalEnum> intervalList = Arrays.asList(IntervalEnum.FIFTEEN_MINUTE);
 
-	//@PostConstruct
+	@PostConstruct
 	public void initGlobalList(){
 		// 初始化行情数据
 		initWebSocket();
 		// 初始化新闻流
-		initPaNewsLab();
+		new Thread(() -> {
+			initPaNewsLab();
+		},"news").start();
+
 	}
 
 	/**

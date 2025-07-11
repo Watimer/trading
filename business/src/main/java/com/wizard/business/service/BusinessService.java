@@ -5,6 +5,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson2.JSON;
 import com.wizard.business.component.PushMessage;
 import com.wizard.business.component.RedisUtils;
@@ -32,6 +34,8 @@ import cn.hutool.core.util.StrUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 
+import static com.wizard.common.constants.RedisConstants.BINANCE_SYMBOL;
+
 /**
  * @author wizard
  * @date 2025年07月09日 17:10
@@ -53,12 +57,6 @@ public class BusinessService {
 
     @Resource
     PushMessage pushMessage;
-
-    @Resource
-    private SuperTrendSignalService superTrendSignalService;
-
-    @Resource
-    StringRedisTemplate stringRedisTemplate;
 
     /**
      * 内存存储结构：存储多标的、多周期的超级趋势指标数据
@@ -261,11 +259,34 @@ public class BusinessService {
             });
         }
         // 其他信号，待补充
-        
+
         // 发送通知
         if(pushFlag.get()){
             dingDingMessageDTO.setContext(content.toString());
             pushMessage.pushMessage(dingDingMessageDTO);
         }
+    }
+
+    /**
+     * 扫描币安可交易标的
+     */
+    public void scanAllSymbol() {
+
+        String string = binanceFuturesClient.market().exchangeInfo();
+
+        JSONObject jsonObject = JSONObject.parseObject(string);
+        JSONArray jsonArray = jsonObject.getJSONArray("symbols");
+        List<String> resultList = new ArrayList<>();
+        for (int i = 0; i < jsonArray.size(); i++) {
+            JSONObject jsonObject1 = jsonArray.getJSONObject(i);
+            // 获取合约类型
+            String contractType = jsonObject1.getString("contractType");
+            // 获取交易对名称
+            String symbol = jsonObject1.getString("symbol");
+            if("PERPETUAL".equals(contractType)&& !symbol.contains("USDC") && symbol.contains("USDT")){
+                resultList.add(symbol);
+            }
+        }
+        redisUtils.set(RedisConstants.BINANCE_SYMBOL,JSONObject.toJSONString(resultList));
     }
 }

@@ -51,13 +51,6 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
-# 代理地址
-PROXY:
-  URL: https://fapi.binance.com
-BINANCE:
-  API_KEY: bLRZ0KadDOFwzi4wykvUaztZPqEy1vVtqXHSZTiJsXZh8QbXpKAJBhTZxnwRzpA8
-  SECRET_KEY: MlUXOcLE79Bx4ld7YnYS6hSjKzxhgOOzEdT8sS9bHZ1GLYFrITMYbxE8WHt7y3Hg
-
 # 钉钉机器人配置-token-签名
 CUSTOM_ROBOT_TOKEN: ${DINGDING_CUSTOM_ROBOT_TOKEN}
 SECRET: ${DINGDING_SECRET}

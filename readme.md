@@ -34,6 +34,24 @@
 
 添加自选币种后，行情数据会自动拉取，并计算指标。若项目无报错，耐心等待信号通知即可
 
+## 设置环境变量
+以mac为例
+1.打开配置文件
+```shell
+vim ~/.zshrc
+```
+2.输入配置信息
+```shell
+export BINANCE_TRADE_API_KEY=11
+export BINANCE_TRADE_SECRET_KEY=22
+
+export DINGDING_CUSTOM_ROBOT_TOKEN=33
+export DINGDING_SECRET=44
+```
+3.加载环境变量
+```shell
+source ~/.zshrc
+```
 
 ## 后续计划
  1. 识别单根K线形态
