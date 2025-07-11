@@ -7,6 +7,7 @@ import com.dingtalk.api.response.OapiRobotSendResponse;
 import com.taobao.api.ApiException;
 import com.wizard.common.model.dto.DingDingMessageDTO;
 import org.apache.commons.codec.binary.Base64;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Mac;
@@ -15,7 +16,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 
 /**
  * @author wizard
@@ -25,9 +25,11 @@ import java.util.Arrays;
 @Component
 public class PushMessage {
 
-	public static final String CUSTOM_ROBOT_TOKEN = "61d0b64d2f3807c2a52d4c2dcc938d0d54d4719f8cc0683078c02b14bed1b25f";
+	@Value("${CUSTOM_ROBOT_TOKEN}")
+	public String CUSTOM_ROBOT_TOKEN;
 
-	public static final String SECRET = "SECb7c748cdc3e5b554e42b9bb5705ec185f946921720239d84a253576a0e75ff54";
+	@Value("${SECRET}")
+	public String SECRET;
 
 	public void pushMessage(DingDingMessageDTO dingDingMessageDTO) {
 		try {
