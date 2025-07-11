@@ -18,6 +18,9 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author wizard
@@ -53,7 +56,7 @@ public class TradingViewService {
 		// 解析返回结果
 		JSONObject jsonResult = JSONObject.parseObject(result);
 		List<JSONObject> dataList = jsonResult.getJSONArray("data").toJavaList(JSONObject.class);
-
+		List<String> tagsList = new ArrayList<>();
 		for (JSONObject jsonObject : dataList) {
 			JSONArray jsonArray = jsonObject.getJSONArray("d");
 			String symbol = jsonArray.getString(0);
@@ -66,14 +69,18 @@ public class TradingViewService {
 			// 获取tags
 			JSONArray tagArray = jsonArray.getJSONArray(20);
 			StringBuffer tagsBuffer = new StringBuffer();
-			tagArray.stream().forEach(item -> tagsBuffer.append(item).append(","));
+			List<String> finalTagsList = tagsList;
+			tagArray.stream().forEach(item -> {
+				tagsBuffer.append(item).append(",");
+				finalTagsList.add(item.toString());
+			});
 			tradingViewStrongSymbolVO.setTags(tagsBuffer.toString());
 			tradingViewStrongSymbolVO.setVolatility(jsonArray.getBigDecimal(21));
 			stringList.add(tradingViewStrongSymbolVO);
 		}
 		if(!stringList.isEmpty()){
 			StringBuffer stringBuffer = new StringBuffer();
-			stringBuffer.append("警报类型:强势标的").append("\n").append("\n");
+			stringBuffer.append("TradingView强势标的").append("\n");
 			// 推送钉钉
 			for (TradingViewStrongSymbolVO tradingViewStrongSymbolVO : stringList){
 				String symbol = tradingViewStrongSymbolVO.getSymbol();
@@ -83,9 +90,18 @@ public class TradingViewService {
 				increaseInPrice = increaseInPrice.setScale(2, BigDecimal.ROUND_HALF_UP);
 				stringBuffer.append(symbol).append("\n")
 						.append("价格:").append(" ").append(increaseInPrice).append("\n")
-						.append("流动:").append(" ").append(effectiveLiquidity).append("\n")
-						.append("标签:").append(" ").append(tradingViewStrongSymbolVO.getTags()).append("\n").append("\n");
+						.append("流动:").append(" ").append(effectiveLiquidity).append("\n").append("\n");
 			}
+
+			tagsList = tagsList.stream()
+					.collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+					.entrySet()
+					.stream()
+					.sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+					.map(Map.Entry::getKey)
+					.collect(Collectors.toList());
+
+			stringBuffer.append("标签:").append(" ").append(String.join("、",tagsList)).append("\n");
 			stringBuffer.append("时间:").append(" ").append(DateUtil.now());
 			DingDingMessageDTO dingDingMessageDTO2 = DingDingMessageDTO.builder()
 					.msgtype("text")
