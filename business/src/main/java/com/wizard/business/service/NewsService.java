@@ -12,13 +12,17 @@ import com.binance.connector.futures.client.impl.UMFuturesClientImpl;
 import com.binance.connector.futures.client.impl.futures.Account;
 import com.binance.connector.futures.client.impl.futures.Market;
 import com.binance.connector.futures.client.impl.um_futures.UMMarket;
+import com.wizard.business.component.PushMessage;
 import com.wizard.business.component.RedisUtils;
 import com.wizard.common.component.GlobalListComponent;
 import com.wizard.common.constants.RedisConstants;
+import com.wizard.common.enums.NewsTypeEnum;
+import com.wizard.common.model.dto.DingDingMessageDTO;
 import com.wizard.common.utils.TokenNewsAnalyzerUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -46,6 +50,12 @@ public class NewsService {
 	@Resource
 	AccountOrderBinance accountOrderBinance;
 
+	@Resource
+	PushMessage pushMessage;
+
+	@Value("${newsAddress}")
+	private String NEWS_ADDRESS;
+
 	/**
 	 * 监控新闻列表
 	 */
@@ -57,21 +67,23 @@ public class NewsService {
 			List<String> symbolList = new ArrayList<>();
 
 			// 新闻地址
-			String newsAddress = "https://api.panewslab.com/webapi/flashnews?rn=20&lid=1&apppush=0";
+			//String newsAddress = "https://api.panewslab.com/webapi/flashnews?rn=20&lid=1&apppush=0";
 			// 调用新闻接口
-			String body = HttpRequest.get(newsAddress).execute().body();
+			String body = HttpRequest.get(NEWS_ADDRESS).execute().body();
 			if(StrUtil.isBlank(body)){
-				//TODO 发送系统通知
+				// 发送系统通知
+				pushMessage.pushText("新闻结果为空");
 				continue;
 			}
 			JSONObject jsonObject = null;
 			try {
 				jsonObject = JSONObject.parseObject(body);
 			} catch (Exception e) {
-				// TODO JSON解析失败,发送通知
-				log.info("格式化失败:{}", e.getMessage());
+				// JSON解析失败,发送通知
+				pushMessage.pushText("新闻解析失败"+e.getMessage());
 				continue;
 			}
+			TokenNewsAnalyzerUtil.TokenNewsResult tokenNewsResult = null;
 			if(ObjectUtil.isNotNull(jsonObject) && 0 == jsonObject.getInteger("errno")){
 				// 提取data
 				JSONObject data = jsonObject.getJSONObject("data");
@@ -85,37 +97,71 @@ public class NewsService {
 						// 新闻标题
 						String string = jsonObject2.getString("title");
 
-						symbolList = TokenNewsAnalyzerUtil.extractTokenNames(string);
+						tokenNewsResult = TokenNewsAnalyzerUtil.analyzeTokenNews(string);
 					}
 				}
 			}
 
-			if(CollUtil.isNotEmpty(symbolList)){
-				String symbol = symbolList.get(0) + "USDT";
-				// 此处应添加判断是否在币安的逻辑
-				String binanceSymbolList = redisUtils.get(RedisConstants.BINANCE_SYMBOL);
-				if(StrUtil.isNotBlank(binanceSymbolList) && binanceSymbolList.contains(symbol)){
+			// 根据新闻解析结果,执行下单操作
+			if(ObjectUtil.isNotNull(tokenNewsResult)){
+				// 新闻解析方向
+				NewsTypeEnum newsType = tokenNewsResult.getNewsType();
+				// 解析出的代币列表
+				symbolList = tokenNewsResult.getExtractedTokens();
 
-					// 最低数量为5U
-					BigDecimal minMoney = new BigDecimal("5.0");
-					// 当前价格
-					BigDecimal price = umMarketService.getMarketPrice(symbol);
-
-					// 计算最低买入数量
-					BigDecimal bigDecimalCount = minMoney.divide(price, RoundingMode.HALF_DOWN);
-					// 最低买入数量 * 2
-					bigDecimalCount = bigDecimalCount.multiply(new BigDecimal(symbol));
-
-					LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
-					parameters.put("symbols", symbolList.get(0));
-					parameters.put("side", "BUY");
-					parameters.put("type", "MARKET");
-					parameters.put("positionSide", "LONG");
-					parameters.put("quantity", bigDecimalCount.intValue());
-					accountOrderBinance.newOrder(parameters);
+				switch (newsType) {
+					// 上架
+					case LISTING:
+						extractedBinance(symbolList,"BUY","LONG");
+						break;
+					// 下架
+					case DELISTING:
+						extractedBinance(symbolList,"SELL","SHORT");
+						break;
+					// 未知
+					default:
+						break;
 				}
 			}
 		}
 
+	}
+
+	/**
+	 * 币安下单操作
+	 * @param symbolList		币种列表
+	 * @param side				买或卖 BUY OR SELL
+	 * @param positionSide		多或空 LONG OR SHORT
+	 */
+	private void extractedBinance(List<String> symbolList,String side,String positionSide) {
+		if(CollUtil.isEmpty(symbolList)){
+			return;
+		}
+		symbolList.stream().forEach(symbol -> {
+			if(!symbol.contains("USDT")){
+				symbol = symbol + "USDT";
+			}
+			String binanceSymbolList = redisUtils.get(RedisConstants.BINANCE_SYMBOL);
+			if(StrUtil.isNotBlank(binanceSymbolList) && binanceSymbolList.contains(symbol)){
+
+				// 最低数量为5U
+				BigDecimal minMoney = new BigDecimal("5.0");
+				// 当前价格
+				BigDecimal price = umMarketService.getMarketPrice(symbol);
+
+				// 计算最低买入数量
+				BigDecimal bigDecimalCount = minMoney.divide(price, RoundingMode.HALF_DOWN);
+				// 最低买入数量 * 2
+				bigDecimalCount = bigDecimalCount.multiply(new BigDecimal(symbol));
+
+				LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
+				parameters.put("symbols", symbol);
+				parameters.put("side", side);
+				parameters.put("type", "MARKET");
+				parameters.put("positionSide", positionSide);
+				parameters.put("quantity", bigDecimalCount.intValue());
+				accountOrderBinance.newOrder(parameters);
+			}
+		});
 	}
 }

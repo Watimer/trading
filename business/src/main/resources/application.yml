@@ -51,6 +51,9 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
+# 新闻地址
+newsAddress: https://api.panewslab.com/webapi/flashnews?rn=1&lid=1&apppush=0
+
 # WebSocket 配置（可选的自定义配置）
 websocket:
   # 心跳间隔（秒）

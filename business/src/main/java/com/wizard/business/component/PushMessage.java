@@ -27,6 +27,14 @@ import java.security.NoSuchAlgorithmException;
 @Component
 public class PushMessage {
 
+	public void pushText(String content) {
+		DingDingMessageDTO dingDingMessageDTO = DingDingMessageDTO.builder()
+				.msgtype("text")
+				.context(content)
+				.build();
+		pushMessage(dingDingMessageDTO);
+	}
+
 	public void pushMessage(DingDingMessageDTO dingDingMessageDTO) {
 		try {
 			Long timestamp = System.currentTimeMillis();
