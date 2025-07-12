@@ -43,7 +43,7 @@ public class StartComponent {
 
 	List<IntervalEnum> intervalList = Arrays.asList(IntervalEnum.FIFTEEN_MINUTE);
 
-	@PostConstruct
+	//@PostConstruct
 	public void initGlobalList(){
 		// 初始化行情数据
 		initWebSocket();
