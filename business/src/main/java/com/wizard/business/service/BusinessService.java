@@ -12,7 +12,9 @@ import com.wizard.business.component.PushMessage;
 import com.wizard.business.component.RedisUtils;
 import com.wizard.common.constants.RedisConstants;
 import com.wizard.common.enums.IndicatorEnum;
+import com.wizard.common.enums.LinePatternEnum;
 import com.wizard.common.model.dto.DingDingMessageDTO;
+import com.wizard.common.utils.KLinePatternChecker;
 import com.wizard.common.utils.SuperTrend;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -226,6 +228,8 @@ public class BusinessService {
                 String string = redisUtils.hGet(key, indicatorName);
                 SuperTrend superTrend = JSON.parseObject(string,SuperTrend.class);
                 boolean isUptrend = superTrend.getIsUptrend();
+                // 识别当前K线形态
+                LinePatternEnum linePatternEnum = KLinePatternChecker.detectKLineType(marketQuotation.getOpen(), marketQuotation.getHigh(), marketQuotation.getLow(), marketQuotation.getClose());
                 // SUPER_TREND 之上
                 if(isUptrend){
                     double tempLow = marketQuotation.getLow() - superTrend.getSupertrendValue();
@@ -238,6 +242,7 @@ public class BusinessService {
                                 .append("价格:").append(" ").append(marketQuotation.getBigDecimalClose()).append("\n")
                                 .append("指标:").append(" ").append(indicatorName).append("\n")
                                 .append("周期:").append(" ").append(interval).append("\n")
+                                .append("形态:").append(" ").append(linePatternEnum.name()).append("\n")
                                 .append("方向:").append(" ").append("支撑之上").append("\n")
                                 .append("建议:").append(" ").append("回踩至支撑附近,适当做多。").append("\n");
                     }
@@ -252,6 +257,7 @@ public class BusinessService {
                                 .append("价格:").append(" ").append(marketQuotation.getBigDecimalClose()).append("\n")
                                 .append("指标:").append(" ").append(indicatorName).append("\n")
                                 .append("周期:").append(" ").append(interval).append("\n")
+                                .append("形态:").append(" ").append(linePatternEnum.name()).append("\n")
                                 .append("方向:").append(" ").append("阻力之下").append("\n")
                                 .append("建议:").append(" ").append("反弹至阻力附近,适当做空。").append("\n");
                     }

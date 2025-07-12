@@ -3,6 +3,7 @@ package com.wizard.common.utils;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.ObjectUtil;
+import com.wizard.common.enums.LinePatternEnum;
 import com.wizard.common.model.*;
 import xlc.quant.data.indicator.IndicatorCalculator;
 import xlc.quant.data.indicator.IndicatorWarehouseManager;
@@ -127,6 +128,8 @@ public class IndicatorCalculateUtil {
 		//循环-管理员接收 新行情数据-进行批量计算所有指标
 		for (int i = 0; i < marketQuotationList.size(); i++) {
 			MarketQuotation marketQuotation = marketQuotationList.get(i);
+			LinePatternEnum linePatternEnum = KLinePatternChecker.detectKLineType(marketQuotation.getOpen(), marketQuotation.getHigh(), marketQuotation.getLow(), marketQuotation.getClose());
+			marketQuotation.setLinePatternEnum(linePatternEnum.name());
 			calculateManager.accept(marketQuotation);
 		}
 	}

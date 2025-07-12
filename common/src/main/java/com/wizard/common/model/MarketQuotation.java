@@ -1,6 +1,7 @@
 package com.wizard.common.model;
 
 import com.wizard.common.enums.IntervalEnum;
+import com.wizard.common.enums.LinePatternEnum;
 import com.wizard.common.utils.ATR;
 import lombok.Data;
 import xlc.quant.data.indicator.IndicatorCalculateCarrier;
@@ -163,6 +164,8 @@ public class MarketQuotation implements IndicatorCalculateCarrier<LocalDateTime>
     private Double wr20;
 
     private Supertrend supertrend;
+
+    private String linePatternEnum;
 
     /** 新的SuperTrend指标（包含完整信息） */
     private com.wizard.common.utils.SuperTrend supertrendIndicator;

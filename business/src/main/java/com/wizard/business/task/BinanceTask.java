@@ -27,7 +27,7 @@ public class BinanceTask {
     /**
 	 * 从零时起,每四小时零2秒执行一次
 	 */
-	//@Scheduled(fixedRate = 1000 * 60 * 5)
+	@Scheduled(fixedRate = 1000 * 60 * 5)
 	public void scanFourHourData(){
 		businessService.scanFourHourData();
 	}
@@ -35,7 +35,7 @@ public class BinanceTask {
 	/**
 	 * 扫描所有的可交易标的
 	 */
-	//@Scheduled(fixedRate = 1000 * 60 * 15)
+	@Scheduled(fixedRate = 1000 * 60 * 15)
 	public void scanAllSymbol(){
 		businessService.scanAllSymbol();
 	}
