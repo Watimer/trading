@@ -41,7 +41,7 @@ public class StartComponent {
 	@Resource
 	NewsService newsService;
 
-	List<IntervalEnum> intervalList = Arrays.asList(IntervalEnum.FIFTEEN_MINUTE);
+	List<IntervalEnum> intervalList = Arrays.asList(IntervalEnum.ONE_HOUR);
 
 	@PostConstruct
 	public void initGlobalList(){

@@ -53,6 +53,9 @@ public class NewsService {
 	@Resource
 	PushMessage pushMessage;
 
+	/**
+	 * 新闻地址
+	 */
 	@Value("${newsAddress}")
 	private String NEWS_ADDRESS;
 
@@ -66,10 +69,9 @@ public class NewsService {
 			ThreadUtil.sleep(sleepSecond, TimeUnit.SECONDS);
 			List<String> symbolList = new ArrayList<>();
 
-			// 新闻地址
-			//String newsAddress = "https://api.panewslab.com/webapi/flashnews?rn=20&lid=1&apppush=0";
 			// 调用新闻接口
 			String body = HttpRequest.get(NEWS_ADDRESS).execute().body();
+			log.info("获取到新闻信息:{}", body);
 			if(StrUtil.isBlank(body)){
 				// 发送系统通知
 				pushMessage.pushText("新闻结果为空");
@@ -104,6 +106,7 @@ public class NewsService {
 
 			// 根据新闻解析结果,执行下单操作
 			if(ObjectUtil.isNotNull(tokenNewsResult)){
+				log.info("新闻解析结果:{}", JSONObject.toJSONString(tokenNewsResult));
 				// 新闻解析方向
 				NewsTypeEnum newsType = tokenNewsResult.getNewsType();
 				// 解析出的代币列表
@@ -112,10 +115,12 @@ public class NewsService {
 				switch (newsType) {
 					// 上架
 					case LISTING:
+						log.info("执行买入操作");
 						extractedBinance(symbolList,"BUY","LONG");
 						break;
 					// 下架
 					case DELISTING:
+						log.info("执行卖出操作");
 						extractedBinance(symbolList,"SELL","SHORT");
 						break;
 					// 未知
