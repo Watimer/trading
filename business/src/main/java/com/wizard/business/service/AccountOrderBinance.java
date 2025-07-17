@@ -1,12 +1,15 @@
 package com.wizard.business.service;
 
-import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.binance.connector.futures.client.impl.futures.Account;
 import com.wizard.business.component.PushMessage;
+import com.wizard.common.enums.OrderStatusEnum;
 import com.wizard.common.model.dto.DingDingMessageDTO;
+import com.wizard.common.model.vo.OrderInfoVO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -14,6 +17,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.ZoneId;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author wizard
@@ -30,6 +35,43 @@ public class AccountOrderBinance {
 	@Resource
 	@Qualifier("binanceFuturesAccount")
 	Account binanceFuturesAccount;
+
+	/**
+	 * 查询是否存在订单
+	 * @param symbol	标的
+	 * @return
+	 */
+	public boolean existOrder(String symbol,String positionSide) {
+		LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
+		parameters.put("symbol", symbol);
+		String string = binanceFuturesAccount.allOrders(parameters);
+		if(StrUtil.isBlank(string)){
+			return false;
+		}
+		JSONObject jsonObject = JSONObject.parseObject(string);
+		String dataString = jsonObject.getString("data");
+		if(StrUtil.isBlank(dataString)){
+			return false;
+		}
+		List<OrderInfoVO> orderInfoVOList = JSONObject.parseArray(dataString, OrderInfoVO.class);
+		if(CollUtil.isNotEmpty(orderInfoVOList)){
+			if(StrUtil.isBlank(positionSide)){
+				return true;
+			}
+			AtomicBoolean exist = new AtomicBoolean(false);
+			// 判断当前是否存在同方向订单
+			orderInfoVOList.stream().forEach(orderInfoVO -> {
+				log.info("{}",JSONObject.toJSONString(orderInfoVO));
+				if(orderInfoVO.getPositionSide().equals(positionSide) && orderInfoVO.getStatus().equals(OrderStatusEnum.NEW.getCode())) {
+					log.info("存在同方向订单, symbol:{}, 订单状态:{} number:{}", symbol, orderInfoVO.getStatus(),orderInfoVO.getPositionSide());
+					exist.set(true);
+				}
+			});
+			return exist.get();
+		}
+		return false;
+	}
+
 
 	/**
 	 * 下单方法

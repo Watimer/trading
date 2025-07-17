@@ -120,4 +120,11 @@ public class PushMessageTest {
 
 		log.info("{}",JSONObject.toJSONString(resultList));
 	}
+
+	@Test
+	public void testExistOrder(){
+		String symbol = "MOODENGUSDT";
+		boolean exist = accountOrderBinance.existOrder(symbol,"LONG");
+		System.out.println(exist);
+	}
 }

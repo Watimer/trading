@@ -90,7 +90,7 @@ public class NewsService {
 				// 提取data
 				JSONObject data = jsonObject.getJSONObject("data");
 				// 提取最新新闻
-				JSONArray newsArray = data.getJSONArray("news");
+				JSONArray newsArray = data.getJSONArray("flashNews");
 				if(ObjectUtil.isNotEmpty(newsArray)){
 					JSONObject jsonObject1 = newsArray.getJSONObject(0);
 					if(ObjectUtil.isNotNull(jsonObject1)){
@@ -103,6 +103,7 @@ public class NewsService {
 					}
 				}
 			}
+			//tokenNewsResult = TokenNewsAnalyzerUtil.analyzeTokenNews("Upbit将在KRW、BTC、USDT市场上线ERA代币");
 
 			// 根据新闻解析结果,执行下单操作
 			if(ObjectUtil.isNotNull(tokenNewsResult)){
@@ -111,21 +112,24 @@ public class NewsService {
 				NewsTypeEnum newsType = tokenNewsResult.getNewsType();
 				// 解析出的代币列表
 				symbolList = tokenNewsResult.getExtractedTokens();
-
+				if(CollUtil.isEmpty(symbolList)){
+					log.info("代币解析列表为空,终端流程");
+					continue;
+				}
 				switch (newsType) {
 					// 上架
 					case LISTING:
 						log.info("执行买入操作");
 						extractedBinance(symbolList,"BUY","LONG");
-						break;
+						continue;
 					// 下架
 					case DELISTING:
 						log.info("执行卖出操作");
 						extractedBinance(symbolList,"SELL","SHORT");
-						break;
+						continue;
 					// 未知
 					default:
-						break;
+						continue;
 				}
 			}
 		}
@@ -142,30 +146,39 @@ public class NewsService {
 		if(CollUtil.isEmpty(symbolList)){
 			return;
 		}
-		symbolList.stream().forEach(symbol -> {
+		symbolList.forEach(symbol -> {
 			if(!symbol.contains("USDT")){
 				symbol = symbol + "USDT";
 			}
 			String binanceSymbolList = redisUtils.get(RedisConstants.BINANCE_SYMBOL);
 			if(StrUtil.isNotBlank(binanceSymbolList) && binanceSymbolList.contains(symbol)){
 
-				// 最低数量为5U
-				BigDecimal minMoney = new BigDecimal("5.0");
-				// 当前价格
-				BigDecimal price = umMarketService.getMarketPrice(symbol);
+				try {
+					// 最低数量为5U
+					BigDecimal minMoney = new BigDecimal("5.0");
+					// 当前价格
+					BigDecimal price = umMarketService.getMarketPrice(symbol);
 
-				// 计算最低买入数量
-				BigDecimal bigDecimalCount = minMoney.divide(price, RoundingMode.HALF_DOWN);
-				// 最低买入数量 * 2
-				bigDecimalCount = bigDecimalCount.multiply(new BigDecimal(symbol));
+					// 计算最低买入数量
+					BigDecimal bigDecimalCount = minMoney.divide(price, RoundingMode.HALF_DOWN);
+					// 最低买入数量 * 2
+					bigDecimalCount = bigDecimalCount.multiply(new BigDecimal("2"));
 
-				LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
-				parameters.put("symbols", symbol);
-				parameters.put("side", side);
-				parameters.put("type", "MARKET");
-				parameters.put("positionSide", positionSide);
-				parameters.put("quantity", bigDecimalCount.intValue());
-				accountOrderBinance.newOrder(parameters);
+					LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
+					parameters.put("symbols", symbol);
+					parameters.put("side", side);
+					parameters.put("type", "MARKET");
+					parameters.put("positionSide", positionSide);
+					parameters.put("quantity", bigDecimalCount.intValue());
+					// 先判断当前交易对是否已存在订单,不存在订单时,直接下单,存在订单时则跳过
+					if(!accountOrderBinance.existOrder(symbol,positionSide)){
+						accountOrderBinance.newOrder(parameters);
+					} else {
+						log.info("已存在symbol:{}的订单,不在重复下单",symbol);
+					}
+				} catch (Exception e) {
+					log.error("下单失败",e);
+				}
 			}
 		});
 	}

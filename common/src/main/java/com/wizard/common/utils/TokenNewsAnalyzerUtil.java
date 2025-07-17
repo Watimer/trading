@@ -389,11 +389,7 @@ public class TokenNewsAnalyzerUtil {
 
 	public static void main(String[] args) {
 		String[] testCases = {
-				"Bithumb及其他韩国DAXA成员将下架ALEX代币",
-				"Binance将于7月4日下架ALPHA、BSW等5种代币",
-				"OKX宣布下线LUNA和UST交易对",
-				"Coinbase决定移除XRP代币支持",
-				"Bithumb将在韩元市场上线RESOLV代币"
+				"Upbit将在KRW、BTC、USDT市场上线ERA代币"
 		};
 
 		for (String news : testCases) {
